@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 )
 
 func main() {
@@ -38,6 +39,10 @@ func main() {
 		handleSelection(selected)
 	} else {
 		selected := selectContext(contexts)
+		if selected == "" {
+			fmt.Println("No context selected")
+			return
+		}
 		handleSelection(selected)
 	}
 }
@@ -76,6 +81,15 @@ func selectContext(contexts []string) string {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
+		// Check if the error is due to SIGINT or SIGTSTP
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
+				if status.ExitStatus() == 130 {
+					// Exit gracefully if Ctrl-C or Ctrl-Z was pressed
+					return ""
+				}
+			}
+		}
 		fmt.Println("Error selecting context:", err)
 		os.Exit(1)
 	}
