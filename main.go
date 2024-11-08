@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -20,6 +21,11 @@ func main() {
 	if !commandExists("fzf") {
 		fmt.Println("fzf could not be found. Please install fzf to use this script.")
 		os.Exit(1)
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "help" {
+		printHelp()
+		return
 	}
 
 	contexts := getContexts()
@@ -122,4 +128,25 @@ func unsetContext() {
 		fmt.Println("Error unsetting context:", err)
 		os.Exit(1)
 	}
+}
+
+func printHelp() {
+	appName := filepath.Base(os.Args[0])
+	fmt.Printf(`%s - Kubernetes Context Switcher
+
+Usage:
+  %s [search-term]
+  %s help
+
+Options:
+  search-term    Filter contexts based on the search term.
+  help           Show this help message.
+
+Description:
+  This tool allows you to switch between Kubernetes contexts interactively using fzf.
+  - If a search term is provided, it filters the contexts based on the term.
+  - If the search term is 'unset', it unsets the current context.
+  - If only one context matches, it switches to that context automatically.
+  - If multiple contexts match, it allows you to select one interactively using fzf.
+`, appName, appName, appName)
 }
