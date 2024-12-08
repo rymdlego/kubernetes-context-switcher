@@ -23,6 +23,27 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Parse flags
+	sketchybarNotify := false
+	for _, arg := range os.Args {
+		if arg == "--sketchybar" {
+			// Check if fzf is installed
+			if !commandExists("sketchybar") {
+				fmt.Println("sketchybar could not be found. Please install sketchybar to use this script.")
+				os.Exit(1)
+			}
+			sketchybarNotify = true
+			// Remove the flag from args
+			newArgs := []string{}
+			for _, a := range os.Args {
+				if a != "--sketchybar" {
+					newArgs = append(newArgs, a)
+				}
+			}
+			os.Args = newArgs
+		}
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "help" {
 		printHelp()
 		return
@@ -50,6 +71,10 @@ func main() {
 			return
 		}
 		handleSelection(selected)
+	}
+	// Notify sketchybar if flag was set
+	if sketchybarNotify {
+		notifySketchybar()
 	}
 }
 
@@ -130,6 +155,15 @@ func unsetContext() {
 	}
 }
 
+func notifySketchybar() {
+	cmd := exec.Command("sketchybar", "--trigger", "kubernetes_context_switch")
+	err := cmd.Run()
+	if err != nil {
+		// Silently ignore sketchybar errors
+		return
+	}
+}
+
 func printHelp() {
 	appName := filepath.Base(os.Args[0])
 	fmt.Printf(`%s - Kubernetes Context Switcher
@@ -137,6 +171,9 @@ func printHelp() {
 Usage:
   %s [search-term]
   %s help
+
+Flags:
+  --sketchybar   Sends a sketchybar trigger (kubernetes_context_switch)
 
 Options:
   search-term    Filter contexts based on the search term.
